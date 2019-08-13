@@ -7,7 +7,7 @@ defmodule GRPC.Adapter.Cowboy do
   require Logger
   alias GRPC.Adapter.Cowboy.Handler, as: Handler
 
-  @default_num_acceptors 20
+  @default_num_acceptors 256
 
   # Only used in starting a server manually using `GRPC.Server.start(servers)`
   @spec start(atom, GRPC.Server.servers_map(), non_neg_integer, keyword) ::
