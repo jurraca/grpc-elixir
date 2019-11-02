@@ -28,6 +28,7 @@ defmodule GRPC.Client.Stream do
           codec: map,
           server_stream: boolean,
           canceled: boolean,
+          headers: map,
           __interface__: map
         }
 
@@ -44,12 +45,22 @@ defmodule GRPC.Client.Stream do
             server_stream: nil,
             # TODO: it's better to get canceled status from adapter
             canceled: false,
+            headers: %{},
             __interface__: %{send_request: &__MODULE__.send_request/3, recv: &GRPC.Stub.do_recv/2}
 
   @doc false
   def put_payload(%{payload: payload} = stream, key, val) do
     payload = if payload, do: payload, else: %{}
     %{stream | payload: Map.put(payload, key, val)}
+  end
+
+  def put_headers(%{headers: existing} = stream, headers) do
+    new_headers = Map.merge(existing, headers)
+    %{stream | headers: new_headers}
+  end
+
+  def put_headers(stream, _) do
+    stream
   end
 
   @doc false
