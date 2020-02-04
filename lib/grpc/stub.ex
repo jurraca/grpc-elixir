@@ -459,6 +459,10 @@ defmodule GRPC.Stub do
 
       {:trailers, trailers} ->
         {:ok, acc, GRPC.Transport.HTTP2.decode_headers(trailers)}
+
+      # What should we do here?
+      {:error, error} ->
+        {:error, error}
     end
   end
 
