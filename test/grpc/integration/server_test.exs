@@ -1,6 +1,8 @@
 defmodule GRPC.Integration.ServerTest do
   use GRPC.Integration.TestCase
 
+  import ExUnit.CaptureLog
+
   defmodule FeatureServer do
     use GRPC.Server, service: Routeguide.RouteGuide.Service
 
@@ -21,6 +23,16 @@ defmodule GRPC.Integration.ServerTest do
       {ip, _port} = stream.adapter.get_peer(stream.payload)
       name = to_string(:inet_parse.ntoa(ip))
       Helloworld.HelloReply.new(message: "Hello, #{name}")
+    end
+
+    def say_hello(%{name: "get cert"}, stream) do
+      case stream.adapter.get_cert(stream.payload) do
+        :undefined ->
+          Helloworld.HelloReply.new(message: "Hello, unauthenticated")
+
+        _ ->
+          Helloworld.HelloReply.new(message: "Hello, authenticated")
+      end
     end
 
     def say_hello(req, _stream) do
@@ -119,9 +131,13 @@ defmodule GRPC.Integration.ServerTest do
       {:ok, channel} = GRPC.Stub.connect("localhost:#{port}")
       req = Helloworld.HelloRequest.new(name: "unknown error")
 
-      assert {:error,
+      log = capture_log(fn ->
+        assert {:error,
               %GRPC.RPCError{message: "Internal Server Error", status: GRPC.Status.unknown()}} ==
                channel |> Helloworld.Greeter.Stub.say_hello(req)
+      end)
+
+      assert String.contains?(log, ~S"[error] ** (RuntimeError) unknown error(This is a test, please ignore it)")
     end)
   end
 
@@ -192,6 +208,16 @@ defmodule GRPC.Integration.ServerTest do
       req = Helloworld.HelloRequest.new(name: "get peer")
       {:ok, reply} = channel |> Helloworld.Greeter.Stub.say_hello(req)
       assert reply.message == "Hello, 127.0.0.1"
+    end)
+  end
+
+  test "get cert returns correct client certificate when not present" do
+    run_server([HelloServer], fn port ->
+      {:ok, channel} = GRPC.Stub.connect("localhost:#{port}")
+
+      req = Helloworld.HelloRequest.new(name: "get cert")
+      {:ok, reply} = channel |> Helloworld.Greeter.Stub.say_hello(req)
+      assert reply.message == "Hello, unauthenticated"
     end)
   end
 end

@@ -1,6 +1,8 @@
 defmodule GRPC.Integration.StubTest do
   use GRPC.Integration.TestCase
 
+  import ExUnit.CaptureLog
+
   defmodule HelloServer do
     use GRPC.Server, service: Helloworld.Greeter.Service
 
@@ -18,14 +20,10 @@ defmodule GRPC.Integration.StubTest do
   end
 
   def port_for(pid) do
-    Port.list()
-    |> Enum.find(fn port ->
+    Enum.find(Port.list(), fn port ->
       case Port.info(port, :links) do
-        {:links, links} ->
-          pid in links
-
-        _ ->
-          false
+        {:links, links} -> pid in links
+        _ -> false
       end
     end)
   end
@@ -61,8 +59,14 @@ defmodule GRPC.Integration.StubTest do
       {:ok, channel} = GRPC.Stub.connect("localhost:#{port}", interceptors: [GRPC.Logger.Client])
       name = String.duplicate("a", round(:math.pow(2, 15)))
       req = Helloworld.HelloRequest.new(name: name)
-      {:ok, reply} = channel |> Helloworld.Greeter.Stub.say_hello(req)
-      assert reply.message == "Hello, #{name}"
+
+      log = capture_log(fn ->
+        {:ok, reply} = channel |> Helloworld.Greeter.Stub.say_hello(req)
+        assert reply.message == "Hello, #{name}"
+      end)
+
+      assert String.contains?(log, ~S"Call say_hello of helloworld.Greeter")
+      assert String.match?(log, ~r"Got :ok in [\d]+ms")
     end)
   end
 
