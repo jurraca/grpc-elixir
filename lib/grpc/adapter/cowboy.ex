@@ -144,6 +144,10 @@ defmodule GRPC.Adapter.Cowboy do
     Handler.get_peer(pid)
   end
 
+  def get_cert(%{pid: pid}) do
+    Handler.get_cert(pid)
+  end
+
   def set_compressor(%{pid: pid}, compressor) do
     Handler.set_compressor(pid, compressor)
   end
@@ -156,6 +160,8 @@ defmodule GRPC.Adapter.Cowboy do
 
     idle_timeout = Keyword.get(opts, :idle_timeout, :infinity)
     server_name = Keyword.get(opts, :server_name, servers_name(endpoint, servers))
+    num_acceptors = Keyword.get(opts, :num_acceptors, @default_num_acceptors)
+    max_connections = Keyword.get(opts, :max_connections, @default_max_connections)
 
     # https://ninenines.eu/docs/en/cowboy/2.7/manual/cowboy_http2/
     opts =
@@ -176,10 +182,10 @@ defmodule GRPC.Adapter.Cowboy do
       )
 
     [
-      server_name,
+      servers_name(endpoint, servers),
       %{
-        num_acceptors: @default_num_acceptors,
-        max_connections: @default_max_connections,
+        num_acceptors: num_acceptors,
+        max_connections: max_connections,
         socket_opts: socket_opts(port, opts)
       },
       opts
@@ -221,7 +227,10 @@ defmodule GRPC.Adapter.Cowboy do
   end
 
   defp servers_name(nil, servers) do
-    servers |> Map.values() |> Enum.map(fn s -> inspect(s) end) |> Enum.join(",")
+    servers
+    |> Map.values()
+    |> Enum.map(&inspect/1)
+    |> Enum.join(",")
   end
 
   defp servers_name(endpoint, _) do
