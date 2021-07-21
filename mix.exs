@@ -7,7 +7,7 @@ defmodule GRPC.Mixfile do
     [
       app: :grpc,
       version: @version,
-      elixir: "~> 1.5",
+      elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -36,11 +36,11 @@ defmodule GRPC.Mixfile do
 
   defp deps do
     [
-      {:protobuf, "~> 0.5"},
-      {:cowboy, "~> 2.7"},
-      {:gun, "~> 2.0.0", hex: :grpc_gun},
+      {:protobuf, "~> 0.7"},
+      {:cowboy, "~> 2.8.0", override: true},
+      {:gun, "~> 2.0.0", git: "https://github.com/jurraca/gun"},
       # 2.9.0 fixes some important bugs, so it's better to use ~> 2.9.0
-      # {:cowlib, "~> 2.9.0", override: true},
+      {:cowlib, "~> 2.9.0"},
       {:ex_doc, "~> 0.23", only: :dev},
       {:inch_ex, "~> 2.0", only: [:dev, :test]},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false}
